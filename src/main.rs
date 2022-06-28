@@ -7,8 +7,6 @@ use std::path::PathBuf;
 
 use crate::{csvplot::*, data::get_data_generic};
 
-const OUTPUT: &str = "./output.png";
-
 /// simple cli app for converting csv data to plot
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -18,23 +16,25 @@ struct Args {
     lists: bool,
 
     /// input for csv file
-    #[clap(short, long, parse(from_os_str))]
+    #[clap(value_parser = clap::value_parser!(PathBuf))]
     input: PathBuf,
 
     /// output image untuk plot, hanya bisa menggunakan png
-    #[clap(short, long, parse(from_os_str), default_value = OUTPUT)]
-    output: PathBuf,
+    #[clap(short, long, parse(from_os_str))]
+    output: Option<PathBuf>,
 
     #[clap(subcommand)]
     command: Option<Cmd>,
 }
 #[derive(Debug, Subcommand)]
 enum Cmd {
-    Generate {
+
+    /// generate plot image from given csv file, -h for more configuration
+    Gen {
         #[clap(short, long)]
         split: bool,
 
-        #[clap(short, long, default_value = "Graph DynoTest")]
+        #[clap(short, long, default_value = "Plot From CSV")]
         name: String,
 
         #[clap(short, default_value = "1280")]
@@ -45,12 +45,17 @@ enum Cmd {
     },
 }
 
-fn check_file<'a>(entry: &'a PathBuf, ext: &'a str) -> bool {
-    entry
+fn check_file<P, S>(entry: P, ext: S) -> bool
+where
+    P: AsRef<std::path::Path>,
+    S: AsRef<str>
+{
+    entry.as_ref()
         .extension()
-        .map(|s| s.to_str().unwrap().contains(ext))
+        .map(|s| s.to_str().unwrap().contains(ext.as_ref()))
         .unwrap_or(false)
 }
+
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
@@ -73,40 +78,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if args.lists {
-        let tempdata = get_data_generic(&args.input);
-        for (i, data) in tempdata.into_iter().enumerate() {
-            print!("Data {}", i);
-            for d in data {
-                print!("[{}]", d);
-            }
-            print!("\n");
-        }
-        return Ok(());
+        return Ok(get_data_generic(&args.input)?);
     }
 
-    if check_file(&args.output, "png") == false {
-        return Err(Box::new(FileIOError(
-            format!(
-                "file: {} invalid output format! use `file.png` instead",
-                args.input.to_str().unwrap()
-            )
-            .into(),
-        )));
+    let mut outputfile = PathBuf::new();
+    match args.output{
+        Some(p) => {
+            if check_file(&p, "png") == false {
+                return Err(Box::new(FileIOError(
+                    format!(
+                        "file: {} invalid output format! use `file.png` instead",
+                        args.input.to_str().unwrap()
+                    )
+                    .into(),
+                )));
+            }
+        }
+        None => {
+            outputfile = PathBuf::from(&args.input);
+            outputfile.set_extension("png");
+        }
     }
 
     match args.command {
-        Some(Cmd::Generate {
+        Some(Cmd::Gen {
             split,
             name,
             lebar,
             tinggi,
         }) => {
             if split {
-                match gen_split_plot(&name, &args.input, &args.output, (lebar, tinggi)) {
+                match gen_split_plot(&name, &args.input, &outputfile, (lebar, tinggi)) {
                     Ok(_) => {
                         println!(
                             "Done Generatng Plot Image: {}",
-                            args.output.to_str().unwrap_or(OUTPUT)
+                            outputfile.to_str().unwrap_or("output.png")
                         );
                     }
                     Err(_) => {
@@ -116,11 +122,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             } else {
-                match gen_plot(&name, &args.input, &args.output, (lebar, tinggi)) {
+                match gen_plot(&name, &args.input, &outputfile, (lebar, tinggi)) {
                     Ok(_) => {
                         println!(
                             "Done Generatng Plot Image: {}",
-                            args.output.to_str().unwrap_or(OUTPUT)
+                            outputfile.to_str().unwrap_or("output.png")
                         );
                     }
                     Err(_) => {
