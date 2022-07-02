@@ -28,7 +28,6 @@ struct Args {
 }
 #[derive(Debug, Subcommand)]
 enum Cmd {
-
     /// generate plot image from given csv file, -h for more configuration
     Gen {
         #[clap(short, long)]
@@ -48,17 +47,19 @@ enum Cmd {
 fn check_file<P, S>(entry: P, ext: S) -> bool
 where
     P: AsRef<std::path::Path>,
-    S: AsRef<str>
+    S: AsRef<str>,
 {
-    entry.as_ref()
+    entry
+        .as_ref()
         .extension()
         .map(|s| s.to_str().unwrap().contains(ext.as_ref()))
         .unwrap_or(false)
 }
 
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
+
+    #[cfg(debug_assertions)]
     println!("test: {:?}", args);
 
     if args.input.exists() == false {
@@ -81,8 +82,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(get_data_generic(&args.input)?);
     }
 
-    let mut outputfile = PathBuf::new();
-    match args.output{
+    let mut outputfile = String::new();
+    match args.output {
         Some(p) => {
             if check_file(&p, "png") == false {
                 return Err(Box::new(FileIOError(
@@ -92,13 +93,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     )
                     .into(),
                 )));
+            } else {
+                outputfile.push_str(p.to_str().unwrap());
             }
         }
         None => {
-            outputfile = PathBuf::from(&args.input);
-            outputfile.set_extension("png");
+            let mut temp = PathBuf::from(&args.input);
+            temp.set_extension("png");
+            outputfile.push_str(temp.to_str().unwrap());
         }
     }
+    println!("file output: {}", outputfile);
 
     match args.command {
         Some(Cmd::Gen {
@@ -109,12 +114,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }) => {
             if split {
                 match gen_split_plot(&name, &args.input, &outputfile, (lebar, tinggi)) {
-                    Ok(_) => {
-                        println!(
-                            "Done Generatng Plot Image: {}",
-                            outputfile.to_str().unwrap_or("output.png")
-                        );
-                    }
+                    Ok(_) => println!("Done Generatng Plot Image: {}", outputfile),
                     Err(_) => {
                         return Err(Box::new(PlotCsvError(format!(
                             "got error when generating plot from data csv"
@@ -123,12 +123,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             } else {
                 match gen_plot(&name, &args.input, &outputfile, (lebar, tinggi)) {
-                    Ok(_) => {
-                        println!(
-                            "Done Generatng Plot Image: {}",
-                            outputfile.to_str().unwrap_or("output.png")
-                        );
-                    }
+                    Ok(_) => println!("Done Generatng Plot Image: {}", outputfile),
                     Err(_) => {
                         return Err(Box::new(PlotCsvError(format!(
                             "got error when generating plot from data csv"

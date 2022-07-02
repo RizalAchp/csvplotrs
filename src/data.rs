@@ -163,4 +163,16 @@ mod tests {
             data, EXPECT
         );
     }
+
+    #[test]
+    fn test_sum_path() {
+        let mut p = PathBuf::from("./uwuuwu.uwu");
+        p.file_stem().unwrap();
+        p.set_extension("png");
+
+        let mut s = String::from("hehe");
+        s.push_str(p.to_str().unwrap());
+        println!("path : {}", s);
+        assert_eq!("", s);
+    }
 }

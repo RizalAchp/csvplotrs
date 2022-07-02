@@ -21,18 +21,19 @@ impl fmt::Display for PlotCsvError {
 impl Error for FileIOError {}
 impl Error for PlotCsvError {}
 
-pub fn gen_plot<'a, P>(
-    _name: &'a str,
+pub fn gen_plot<S, P>(
+    _name: S,
     _in: P,
-    _out: P,
+    _out: S,
     size: (u32, u32),
 ) -> Result<(), Box<dyn std::error::Error>>
 where
+    S: AsRef<str>,
     P: AsRef<Path>,
 {
     let root_area = BitMapBackend::new(_out.as_ref(), size).into_drawing_area();
     root_area.fill(&WHITE)?;
-    root_area.titled(_name, ("sans-serif", 40))?;
+    root_area.titled(_name.as_ref(), ("sans-serif", 40))?;
     let DataCsv { name, data } = get_data(_in.as_ref())?;
 
     let (xmin, xmax) = get_minmax_vec(&data, 0);
@@ -70,18 +71,19 @@ where
     Ok(())
 }
 
-pub fn gen_split_plot<'a, P>(
-    _name: &'a str,
+pub fn gen_split_plot<S, P>(
+    _name: S,
     _in: P,
-    _out: P,
+    _out: S,
     size: (u32, u32),
 ) -> Result<(), Box<dyn std::error::Error>>
 where
+    S: AsRef<str>,
     P: AsRef<Path>,
 {
     let root_area = BitMapBackend::new(_out.as_ref(), size).into_drawing_area();
     root_area.fill(&WHITE)?;
-    root_area.titled(_name, ("sans-serif", 40))?;
+    root_area.titled(_name.as_ref(), ("sans-serif", 40))?;
     let DataCsv { name, data } = get_data(_in.as_ref())?;
     let size = data[0].len();
     if size < 3 {

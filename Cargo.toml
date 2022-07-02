@@ -1,8 +1,14 @@
 [package]
 name = "csvplot"
 version = "0.1.0"
+description = "A simple cli apps to generate plot image from csv file"
+repository = "https://github.com/RizalAchp/csvplotrs"
+homepage = "https://github.com/RizalAchp/csvplotrs"
+categories = ["command-line-interface"]
+keywords = [ "cli", "plot", "csv", "data", ]
+license-file = "LICENSE*"
+readme = "README.md"
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -10,3 +16,20 @@ csv = "1.1"
 serde = { version = "1", features = ["derive"] }
 clap = { version = "3.0", features = ["derive"] }
 plotters = "^0.3.1"
+
+[package.metadata.deb]
+maintainer = "Rizal Achmad Pahlevi <rizal.ahmadp@gmail.com>"
+copyright = "2022, Rizal Achmad Pahlevi<rizal.ahmadp@gmail.com>"
+license-file = ["LICENSE", "4"]
+extended-description = """A simple cli app for generate plot image from csv file"""
+depends = "$auto"
+section = "command-line-interface"
+priority = "optional"
+assets = [
+    ["target/release/csvplot", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/cargo-deb/README", "644"],
+]
+
+[target.x86_64-pc-windows-gnu]
+linker = "/usr/bin/x86_64-w64-mingw32-gcc"
+ar = "/usr/bin/x86_64-w64-mingw32-gcc-ar"
